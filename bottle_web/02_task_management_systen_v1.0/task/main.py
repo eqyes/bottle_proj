@@ -3,6 +3,9 @@
 #更多内容请参考博客：http://www.linuxyw.com
 #戴儒锋
 #63780668@qq.com
+import gevent
+from gevent import monkey;
+monkey.patch_all()
 import os,sys,json
 from bottle import request,route,error,run,default_app
 from bottle import template,static_file,redirect,abort
@@ -12,14 +15,12 @@ from beaker.middleware import SessionMiddleware
 from bottle import TEMPLATE_PATH
 import time,datetime
 import hashlib
-from gevent import monkey;
 import MySQLdb
 import hashlib
-monkey.patch_all()
 
 db_name = 'task'
-db_user = 'root'
-db_pass = '111111'
+db_user = 'root_sql'
+db_pass = 'isokdo'
 db_ip = 'localhost'
 db_port = 3306
 
@@ -60,15 +61,15 @@ def writeDb(sql,db_data=()):
     try:
         conn = MySQLdb.connect(db=db_name,user=db_user,passwd=db_pass,host=db_ip,port=int(db_port),charset="utf8")
         cursor = conn.cursor()
-    except Exception,e:
-        print e
+    except Exception as e:
+        print(e)
         logging.error('数据库连接失败:%s' % e)
         return False
 
     try:
         cursor.execute(sql,db_data)
         conn.commit()
-    except Exception,e:
+    except Exception as e:
         conn.rollback()
         logging.error('数据写入失败:%s' % e)
         return False
@@ -85,15 +86,15 @@ def readDb(sql,db_data=()):
     try:
         conn = MySQLdb.connect(db=db_name,user=db_user,passwd=db_pass,host=db_ip,port=int(db_port),charset="utf8")
         cursor = conn.cursor()
-    except Exception,e:
-        print e
+    except Exception as e:
+        print(e)
         logging.error('数据库连接失败:%s' % e)
         return False
 
     try:
         cursor.execute(sql,db_data)
         data = [dict((cursor.description[i][0], value) for i, value in enumerate(row)) for row in cursor.fetchall()]
-    except Exception,e:
+    except Exception as e:
         logging.error('数据执行失败:%s' % e)
         return False
     finally:
@@ -178,7 +179,7 @@ def adduser():
 
     #把密码进行md5加密码处理后再保存到数据库中
     m = hashlib.md5()
-    m.update(passwd)
+    m.update(passwd.encode("utf-8"))
     passwd = m.hexdigest()
 
     #检测表单各项值，如果出现为空的表单，则返回提示
@@ -222,7 +223,7 @@ def changeuser(id):
         passwd = readDb(sql,id)[0]['passwd']
     else:
         m = hashlib.md5()
-        m.update(passwd)
+        m.update(passwd.encode("utf-8"))
         passwd = m.hexdigest()
 
     def checkRequest(list_data):
@@ -827,7 +828,7 @@ def do_login():
         return template('login',message=message)
 
     m = hashlib.md5()
-    m.update(passwd)
+    m.update(passwd.encode("utf-8"))
     passwd_md5 = m.hexdigest()
     auth_sql = '''
         SELECT
@@ -1227,4 +1228,4 @@ def tasklist(id):
 if __name__ == '__main__':
     app = default_app()
     app = SessionMiddleware(app, session_opts)
-    run(app=app,host='0.0.0.0', port=8080,debug=True,server='gevent')
+    run(app=app,host='0.0.0.0', port=8090,debug=True,server='gevent')
