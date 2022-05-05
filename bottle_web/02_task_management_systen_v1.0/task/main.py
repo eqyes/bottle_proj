@@ -24,6 +24,7 @@ db_pass = 'isokdo'
 db_ip = 'localhost'
 db_port = 3306
 
+db_format="utf8"
 
 #获取本脚本所在的路径
 pro_path = os.path.split(os.path.realpath(__file__))[0]
@@ -59,7 +60,7 @@ def writeDb(sql,db_data=()):
     连接mysql数据库（写），并进行写的操作
     """
     try:
-        conn = MySQLdb.connect(db=db_name,user=db_user,passwd=db_pass,host=db_ip,port=int(db_port),charset="utf8")
+        conn = MySQLdb.connect(db=db_name,user=db_user,passwd=db_pass,host=db_ip,port=int(db_port),charset=db_format)
         cursor = conn.cursor()
     except Exception as e:
         print(e)
@@ -84,7 +85,7 @@ def readDb(sql,db_data=()):
     连接mysql数据库（从），并进行数据查询
     """
     try:
-        conn = MySQLdb.connect(db=db_name,user=db_user,passwd=db_pass,host=db_ip,port=int(db_port),charset="utf8")
+        conn = MySQLdb.connect(db=db_name,user=db_user,passwd=db_pass,host=db_ip,port=int(db_port),charset=db_format)
         cursor = conn.cursor()
     except Exception as e:
         print(e)
@@ -764,7 +765,10 @@ def getdepartment():
     """获取部门列表的接口"""
     sql = "select * from department;"
     result = readDb(sql,)
-    return json.dumps(result)
+    #rt=json.dumps(result)
+    rt=json.dumps(result,ensure_ascii=True).encode('utf-8').decode('unicode_escape')
+    #print(rt)
+    return rt
 
 @route('/department')
 @checkAccess
@@ -789,7 +793,9 @@ def do_addpartment():
 @checkAccess
 def editpartment(id):
     """修改部门"""
-    name = request.forms.get("name")
+    name = request.forms.get("name").encode('latin1').decode('utf-8')
+    #name = request.forms.get("name")
+    #print("editpartment ",name)
     sql = "UPDATE department SET name=%s WHERE id=%s"
     data = (name,id)
     result = writeDb(sql,data)
@@ -1228,4 +1234,4 @@ def tasklist(id):
 if __name__ == '__main__':
     app = default_app()
     app = SessionMiddleware(app, session_opts)
-    run(app=app,host='0.0.0.0', port=8090,debug=True,server='gevent')
+    run(app=app,host='0.0.0.0', port=8090,debug=True,server='gevent',reloader=True)
